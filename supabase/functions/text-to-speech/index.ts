@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
@@ -20,7 +21,7 @@ interface Host {
 
 const HOSTS: Record<string, Host> = {
   Alex: {
-    voiceId: "pNInz6obpgDQGcFmaJgB", // Adam voice
+    voiceId: "pNInz6obpgDQGcFmaJgB",
     name: "Alex",
     description: "Professional and engaging male host with a warm tone",
     settings: {
@@ -29,7 +30,7 @@ const HOSTS: Record<string, Host> = {
     }
   },
   Sarah: {
-    voiceId: "EXAVITQu4vr4xnSDxMaL", // Sarah voice
+    voiceId: "EXAVITQu4vr4xnSDxMaL",
     name: "Sarah",
     description: "Friendly and articulate female host with a natural conversational style",
     settings: {
@@ -121,7 +122,6 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Split the script into lines and group by speaker
     const lines = text.split('\n').filter(line => line.trim())
     const audioBuffers: ArrayBuffer[] = []
 
@@ -138,11 +138,9 @@ serve(async (req) => {
       }
     }
 
-    // Combine all audio segments
     const finalBuffer = await concatenateAudioBuffers(audioBuffers)
-    
-    // Upload to Supabase Storage
     const audioUrl = await uploadAudioToStorage(finalBuffer, supabase)
+    
     console.log('Audio file uploaded successfully:', audioUrl)
 
     return new Response(
