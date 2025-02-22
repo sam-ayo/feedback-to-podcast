@@ -4,14 +4,19 @@ import FeedbackInput from '@/components/FeedbackInput';
 import PodcastPreview from '@/components/PodcastPreview';
 
 const Index = () => {
-  const [audioUrl, setAudioUrl] = React.useState<string>('');
+  const [audioContent, setAudioContent] = React.useState<string>('');
   const [isProcessing, setIsProcessing] = React.useState(false);
 
   const handleFeedbackSubmit = async (feedback: string) => {
     setIsProcessing(true);
     try {
-      // Audio is handled directly in the FeedbackInput component
-      setAudioUrl('generated');
+      const { data, error } = await supabase.functions.invoke('text-to-speech', {
+        body: { text: feedback }
+      });
+
+      if (error) throw error;
+      
+      setAudioContent(data.audioContent);
     } catch (error) {
       console.error('Error:', error);
     } finally {
@@ -37,8 +42,8 @@ const Index = () => {
             </div>
           )}
           
-          {audioUrl && !isProcessing && (
-            <PodcastPreview audioUrl={audioUrl} />
+          {audioContent && !isProcessing && (
+            <PodcastPreview audioUrl={audioContent} />
           )}
         </div>
       </div>

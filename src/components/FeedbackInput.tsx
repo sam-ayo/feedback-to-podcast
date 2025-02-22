@@ -5,7 +5,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Mic, Link } from 'lucide-react';
-import { supabase } from "@/integrations/supabase/client";
 
 interface FeedbackInputProps {
   onSubmit: (feedback: string) => void;
@@ -19,22 +18,8 @@ const FeedbackInput: React.FC<FeedbackInputProps> = ({ onSubmit }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (feedback.trim()) {
-      try {
-        const { data, error } = await supabase.functions.invoke('text-to-speech', {
-          body: { text: feedback }
-        });
-
-        if (error) throw error;
-        
-        // Create audio element and play
-        const audio = new Audio(`data:audio/mp3;base64,${data.audioContent}`);
-        await audio.play();
-        
-        onSubmit(feedback);
-        setFeedback('');
-      } catch (error) {
-        console.error('Error generating speech:', error);
-      }
+      onSubmit(feedback);
+      setFeedback('');
     }
   };
 

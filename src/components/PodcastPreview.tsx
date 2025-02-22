@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Download, PlayCircle, PauseCircle } from 'lucide-react';
@@ -11,10 +11,41 @@ interface PodcastPreviewProps {
 
 const PodcastPreview: React.FC<PodcastPreviewProps> = ({ audioUrl }) => {
   const [isPlaying, setIsPlaying] = React.useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    audioRef.current = new Audio(`data:audio/mp3;base64,${audioUrl}`);
+    audioRef.current.addEventListener('ended', () => setIsPlaying(false));
+
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.removeEventListener('ended', () => setIsPlaying(false));
+        audioRef.current.pause();
+      }
+    };
+  }, [audioUrl]);
 
   const togglePlayback = () => {
-    setIsPlaying(!isPlaying);
-    // TODO: Implement actual audio playback
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const handleDownload = () => {
+    const blob = new Blob([Buffer.from(audioUrl, 'base64')], { type: 'audio/mp3' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `podcast-${new Date().toISOString()}.mp3`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -22,7 +53,7 @@ const PodcastPreview: React.FC<PodcastPreviewProps> = ({ audioUrl }) => {
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-semibold text-gray-800">Podcast Preview</h3>
-          <Button variant="outline" size="icon">
+          <Button variant="outline" size="icon" onClick={handleDownload}>
             <Download className="w-4 h-4" />
           </Button>
         </div>
