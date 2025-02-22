@@ -2,6 +2,7 @@
 import React from 'react';
 import FeedbackInput from '@/components/FeedbackInput';
 import PodcastPreview from '@/components/PodcastPreview';
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [audioContent, setAudioContent] = React.useState<string>('');
