@@ -7,19 +7,40 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Voice IDs for different hosts
-const VOICE_IDS = {
-  Alex: "pNInz6obpgDQGcFmaJgB", // Adam voice
-  Sarah: "EXAVITQu4vr4xnSDxMaL"  // Sarah voice
+// Host configurations with their voice settings
+interface Host {
+  voiceId: string
+  name: string
+  description: string
+  settings: {
+    stability: number
+    similarity_boost: number
+  }
 }
 
-const voiceSettings = {
-  stability: 0.75,
-  similarity_boost: 0.75
+const HOSTS: Record<string, Host> = {
+  Alex: {
+    voiceId: "pNInz6obpgDQGcFmaJgB", // Adam voice
+    name: "Alex",
+    description: "Professional and engaging male host with a warm tone",
+    settings: {
+      stability: 0.75,
+      similarity_boost: 0.75
+    }
+  },
+  Sarah: {
+    voiceId: "EXAVITQu4vr4xnSDxMaL", // Sarah voice
+    name: "Sarah",
+    description: "Friendly and articulate female host with a natural conversational style",
+    settings: {
+      stability: 0.75,
+      similarity_boost: 0.75
+    }
+  }
 }
 
-async function generateSpeech(text: string, voiceId: string, apiKey: string): Promise<ArrayBuffer> {
-  const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`, {
+async function generateSpeech(text: string, host: Host, apiKey: string): Promise<ArrayBuffer> {
+  const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${host.voiceId}/stream`, {
     method: 'POST',
     headers: {
       'Accept': 'audio/mpeg',
@@ -29,13 +50,13 @@ async function generateSpeech(text: string, voiceId: string, apiKey: string): Pr
     body: JSON.stringify({
       text,
       model_id: "eleven_monolingual_v1",
-      voice_settings: voiceSettings
+      voice_settings: host.settings
     }),
   })
 
   if (!response.ok) {
     const errorData = await response.text()
-    throw new Error(`Failed to generate speech: ${errorData}`)
+    throw new Error(`Failed to generate speech for ${host.name}: ${errorData}`)
   }
 
   return response.arrayBuffer()
@@ -82,9 +103,10 @@ serve(async (req) => {
       const speakerName = speaker.trim()
       const lineText = textParts.join(':').trim()
 
-      if (lineText && VOICE_IDS[speakerName]) {
-        console.log(`Generating speech for ${speakerName}: ${lineText.substring(0, 50)}...`)
-        const audioBuffer = await generateSpeech(lineText, VOICE_IDS[speakerName], apiKey)
+      const host = HOSTS[speakerName]
+      if (lineText && host) {
+        console.log(`Generating speech for ${host.name} (${host.description}): ${lineText.substring(0, 50)}...`)
+        const audioBuffer = await generateSpeech(lineText, host, apiKey)
         audioBuffers.push(audioBuffer)
       }
     }
