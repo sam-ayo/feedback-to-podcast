@@ -3,31 +3,52 @@ import React from 'react';
 import FeedbackInput from '@/components/FeedbackInput';
 import PodcastPreview from '@/components/PodcastPreview';
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
   const [audioContent, setAudioContent] = React.useState<string>('');
   const [isProcessing, setIsProcessing] = React.useState(false);
+  const { toast } = useToast();
 
   const handleFeedbackSubmit = async (feedback: string) => {
     setIsProcessing(true);
     try {
       // First, generate the podcast script
+      console.log('Generating podcast script...');
       const { data: scriptData, error: scriptError } = await supabase.functions.invoke('generate-podcast-script', {
         body: { feedback }
       });
 
-      if (scriptError) throw scriptError;
+      if (scriptError) {
+        console.error('Script generation error:', scriptError);
+        throw scriptError;
+      }
+
+      console.log('Script generated:', scriptData);
 
       // Then, convert the script to speech
+      console.log('Converting to speech...');
       const { data: audioData, error: audioError } = await supabase.functions.invoke('text-to-speech', {
         body: { text: scriptData.script }
       });
 
-      if (audioError) throw audioError;
+      if (audioError) {
+        console.error('Audio generation error:', audioError);
+        throw audioError;
+      }
       
       setAudioContent(audioData.audioContent);
+      toast({
+        title: "Success!",
+        description: "Your podcast has been generated successfully.",
+      });
     } catch (error) {
       console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate podcast",
+        variant: "destructive",
+      });
     } finally {
       setIsProcessing(false);
     }
