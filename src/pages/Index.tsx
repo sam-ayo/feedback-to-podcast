@@ -11,13 +11,21 @@ const Index = () => {
   const handleFeedbackSubmit = async (feedback: string) => {
     setIsProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('text-to-speech', {
-        body: { text: feedback }
+      // First, generate the podcast script
+      const { data: scriptData, error: scriptError } = await supabase.functions.invoke('generate-podcast-script', {
+        body: { feedback }
       });
 
-      if (error) throw error;
+      if (scriptError) throw scriptError;
+
+      // Then, convert the script to speech
+      const { data: audioData, error: audioError } = await supabase.functions.invoke('text-to-speech', {
+        body: { text: scriptData.script }
+      });
+
+      if (audioError) throw audioError;
       
-      setAudioContent(data.audioContent);
+      setAudioContent(audioData.audioContent);
     } catch (error) {
       console.error('Error:', error);
     } finally {
@@ -30,7 +38,7 @@ const Index = () => {
       <div className="container max-w-4xl py-12 px-4">
         <div className="text-center mb-12 space-y-4">
           <h1 className="text-4xl font-bold text-gray-900">Meeting Assistant</h1>
-          <p className="text-gray-600">Join your online meetings and transform your feedback into voice content</p>
+          <p className="text-gray-600">Transform your meeting feedback into an AI-powered podcast</p>
         </div>
         
         <div className="space-y-8">
@@ -39,7 +47,7 @@ const Index = () => {
           {isProcessing && (
             <div className="text-center py-8 animate-fadeIn">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              <p className="mt-4 text-gray-600">Processing your feedback...</p>
+              <p className="mt-4 text-gray-600">Creating your podcast...</p>
             </div>
           )}
           
