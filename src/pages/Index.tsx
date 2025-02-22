@@ -1,3 +1,4 @@
+
 import React from "react";
 import FeedbackInput from "@/components/FeedbackInput";
 import PodcastPreview from "@/components/PodcastPreview";
@@ -5,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
-  const [audioContent, setAudioContent] = React.useState<string>("");
+  const [audioUrl, setAudioUrl] = React.useState<string>("");
   const [isProcessing, setIsProcessing] = React.useState(false);
   const { toast } = useToast();
 
@@ -40,7 +41,7 @@ const Index = () => {
         throw audioError;
       }
 
-      setAudioContent(audioData.audioContent);
+      setAudioUrl(audioData.audioUrl);
       toast({
         title: "Success!",
         description: "Your podcast has been generated successfully.",
@@ -79,8 +80,8 @@ const Index = () => {
             </div>
           )}
 
-          {audioContent && !isProcessing && (
-            <PodcastPreview audioUrl={audioContent} />
+          {audioUrl && !isProcessing && (
+            <PodcastPreview audioUrl={audioUrl} />
           )}
         </div>
       </div>

@@ -1,6 +1,6 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -75,6 +75,24 @@ async function concatenateAudioBuffers(buffers: ArrayBuffer[]): Promise<ArrayBuf
   return result.buffer
 }
 
+async function uploadAudioToStorage(audioBuffer: ArrayBuffer, supabase: any): Promise<string> {
+  const filename = `podcast_${new Date().getTime()}.mp3`
+  const { data, error } = await supabase.storage
+    .from('podcast_audio')
+    .upload(filename, audioBuffer, {
+      contentType: 'audio/mpeg',
+      cacheControl: '3600'
+    })
+
+  if (error) throw error
+
+  const { data: publicUrl } = supabase.storage
+    .from('podcast_audio')
+    .getPublicUrl(filename)
+
+  return publicUrl.publicUrl
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -90,9 +108,18 @@ serve(async (req) => {
     console.log('Starting text-to-speech conversion...')
     
     const apiKey = Deno.env.get('ELEVENLABS_API_KEY')
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
     if (!apiKey) {
       throw new Error('ElevenLabs API key is not configured')
     }
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error('Supabase configuration is missing')
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     // Split the script into lines and group by speaker
     const lines = text.split('\n').filter(line => line.trim())
@@ -105,7 +132,7 @@ serve(async (req) => {
 
       const host = HOSTS[speakerName]
       if (lineText && host) {
-        console.log(`Generating speech for ${host.name} (${host.description}): ${lineText.substring(0, 50)}...`)
+        console.log(`Generating speech for ${host.name}: ${lineText.substring(0, 50)}...`)
         const audioBuffer = await generateSpeech(lineText, host, apiKey)
         audioBuffers.push(audioBuffer)
       }
@@ -113,12 +140,13 @@ serve(async (req) => {
 
     // Combine all audio segments
     const finalBuffer = await concatenateAudioBuffers(audioBuffers)
-    const base64Audio = btoa(String.fromCharCode(...new Uint8Array(finalBuffer)))
-
-    console.log('Successfully generated and combined all audio segments')
+    
+    // Upload to Supabase Storage
+    const audioUrl = await uploadAudioToStorage(finalBuffer, supabase)
+    console.log('Audio file uploaded successfully:', audioUrl)
 
     return new Response(
-      JSON.stringify({ audioContent: base64Audio }),
+      JSON.stringify({ audioUrl }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {

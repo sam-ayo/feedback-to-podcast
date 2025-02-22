@@ -14,7 +14,7 @@ const PodcastPreview: React.FC<PodcastPreviewProps> = ({ audioUrl }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    audioRef.current = new Audio(`data:audio/mp3;base64,${audioUrl}`);
+    audioRef.current = new Audio(audioUrl);
     audioRef.current.addEventListener('ended', () => setIsPlaying(false));
 
     return () => {
@@ -37,15 +37,12 @@ const PodcastPreview: React.FC<PodcastPreviewProps> = ({ audioUrl }) => {
   };
 
   const handleDownload = () => {
-    const blob = new Blob([Buffer.from(audioUrl, 'base64')], { type: 'audio/mp3' });
-    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
+    a.href = audioUrl;
     a.download = `podcast-${new Date().toISOString()}.mp3`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    URL.revokeObjectURL(url);
   };
 
   return (
