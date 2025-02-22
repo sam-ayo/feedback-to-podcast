@@ -1,7 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
-import { Voice, VoiceSettings } from "https://esm.sh/@elevenlabs/api@1.0.2"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,7 +13,7 @@ const VOICE_IDS = {
   Sarah: "EXAVITQu4vr4xnSDxMaL"  // Sarah voice
 }
 
-const voiceSettings: VoiceSettings = {
+const voiceSettings = {
   stability: 0.75,
   similarity_boost: 0.75
 }
@@ -84,6 +83,7 @@ serve(async (req) => {
       const lineText = textParts.join(':').trim()
 
       if (lineText && VOICE_IDS[speakerName]) {
+        console.log(`Generating speech for ${speakerName}: ${lineText.substring(0, 50)}...`)
         const audioBuffer = await generateSpeech(lineText, VOICE_IDS[speakerName], apiKey)
         audioBuffers.push(audioBuffer)
       }
