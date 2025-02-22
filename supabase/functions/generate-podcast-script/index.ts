@@ -29,10 +29,21 @@ serve(async (req) => {
       messages: [
         {
           role: "system",
-          content: `You are a podcast script writer. Create an engaging discussion between two hosts (Alex and Sarah) 
-          who analyze and discuss meeting feedback. Make it natural, conversational, and include some back-and-forth 
-          dialogue. Format should be clean without markdown. Each line should start with the speaker's name followed 
-          by a colon. Keep the tone professional but friendly.`
+          content: `You are a podcast script writer. Create a discussion between these two hosts:
+
+1. Alex:
+- Role: Primary Host
+- Personality: Professional, analytical, and engaging
+- Speaking Style: Warm, authoritative, good at summarizing points
+- Voice Type: Male, confident and clear
+
+2. Sarah:
+- Role: Co-Host
+- Personality: Friendly, empathetic, and insightful
+- Speaking Style: Conversational, engaging, asks good follow-up questions
+- Voice Type: Female, natural and articulate
+
+Format the output as a conversation where each line starts with the speaker's name followed by a colon. Make the dialogue natural and engaging, with both hosts contributing equally to the discussion.`
         },
         {
           role: "user",
