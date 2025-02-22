@@ -19,15 +19,18 @@ serve(async (req) => {
       throw new Error('Text is required')
     }
 
+    console.log('Starting text-to-speech conversion...')
+    console.log('Input text length:', text.length)
+
     const response = await fetch('https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM', {
       method: 'POST',
       headers: {
         'Accept': 'audio/mpeg',
         'Content-Type': 'application/json',
-        'xi-api-key': Deno.env.get('ELEVENLABS_API_KEY') || '',
+        'xi-api-key': Deno.env.get('ELEVENLABS_API_KEY'),
       },
       body: JSON.stringify({
-        text,
+        text: text,
         model_id: "eleven_monolingual_v1",
         voice_settings: {
           stability: 0.5,
@@ -37,11 +40,15 @@ serve(async (req) => {
     })
 
     if (!response.ok) {
-      throw new Error('Failed to generate speech')
+      const errorData = await response.text()
+      console.error('ElevenLabs API error:', errorData)
+      throw new Error(`Failed to generate speech: ${errorData}`)
     }
 
+    console.log('Successfully received audio response')
     const audioBuffer = await response.arrayBuffer()
     const base64Audio = btoa(String.fromCharCode(...new Uint8Array(audioBuffer)))
+    console.log('Successfully converted audio to base64')
 
     return new Response(
       JSON.stringify({ audioContent: base64Audio }),
@@ -52,7 +59,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
-        status: 400,
+        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     )
