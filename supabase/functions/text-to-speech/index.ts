@@ -21,20 +21,26 @@ serve(async (req) => {
 
     console.log('Starting text-to-speech conversion...')
     console.log('Input text length:', text.length)
+    
+    const apiKey = Deno.env.get('ELEVENLABS_API_KEY')
+    if (!apiKey) {
+      throw new Error('ElevenLabs API key is not configured')
+    }
 
-    const response = await fetch('https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM', {
+    // Using Rachel voice which is known to be more reliable
+    const response = await fetch('https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM/stream', {
       method: 'POST',
       headers: {
         'Accept': 'audio/mpeg',
         'Content-Type': 'application/json',
-        'xi-api-key': Deno.env.get('ELEVENLABS_API_KEY'),
+        'xi-api-key': apiKey,
       },
       body: JSON.stringify({
         text: text,
         model_id: "eleven_monolingual_v1",
         voice_settings: {
-          stability: 0.5,
-          similarity_boost: 0.5,
+          stability: 0.75,  // Increased stability
+          similarity_boost: 0.75,  // Increased similarity
         }
       }),
     })
@@ -57,7 +63,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in text-to-speech function:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: error.stack || 'No additional details available'
+      }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
