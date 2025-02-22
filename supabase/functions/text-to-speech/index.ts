@@ -1,5 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import "https://deno.land/x/xhr@0.1.0/mod.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,13 +13,13 @@ serve(async (req) => {
   }
 
   try {
-    const { text, voiceId = "21m00Tcm4TlvDq8ikWAM" } = await req.json()
+    const { text } = await req.json()
 
     if (!text) {
       throw new Error('Text is required')
     }
 
-    const response = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + voiceId, {
+    const response = await fetch('https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM', {
       method: 'POST',
       headers: {
         'Accept': 'audio/mpeg',
@@ -47,6 +48,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
+    console.error('Error in text-to-speech function:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
