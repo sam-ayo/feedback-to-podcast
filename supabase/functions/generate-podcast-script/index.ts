@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
+import OpenAI from "https://esm.sh/openai@4.20.1"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,39 +20,39 @@ serve(async (req) => {
       throw new Error('Feedback is required')
     }
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a professional podcast host. Convert meeting feedback into an engaging podcast script. Keep it concise, conversational, and highlight key points.'
-          },
-          {
-            role: 'user',
-            content: `Create a short podcast script discussing this meeting feedback: ${feedback}`
-          }
-        ],
-      }),
+    const openai = new OpenAI({
+      apiKey: Deno.env.get('OPENAI_API_KEY')
     })
 
-    const data = await response.json()
-    const script = data.choices[0].message.content
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: `You are a podcast script writer. Create an engaging discussion between two hosts (Alex and Sarah) 
+          who analyze and discuss meeting feedback. Make it natural, conversational, and include some back-and-forth 
+          dialogue. Format should be clean without markdown. Each line should start with the speaker's name followed 
+          by a colon. Keep the tone professional but friendly.`
+        },
+        {
+          role: "user",
+          content: `Create a podcast script discussing this meeting feedback: ${feedback}`
+        }
+      ],
+    })
+
+    const script = response.choices[0].message.content
 
     return new Response(
       JSON.stringify({ script }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
+    console.error('Error in generate-podcast-script function:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
-        status: 400,
+        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     )
