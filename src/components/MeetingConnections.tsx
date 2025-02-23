@@ -11,7 +11,7 @@ const MEETING_PLATFORMS = [
   },
   {
     name: "Microsoft Teams",
-    icon: "/lovable-uploads/d725522d-d449-4284-ad8c-34b718fcec60.png#teams",
+    icon: "/lovable-uploads/ac08d998-f1c0-4c94-b4f4-ffa439e8f247.png",
     action: () => console.log("Connecting to Teams..."),
   },
   {
