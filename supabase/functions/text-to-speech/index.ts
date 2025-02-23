@@ -15,48 +15,29 @@ serve(async (req) => {
 
   try {
     const { text } = await req.json()
+    console.log('Received text length:', text?.length)
 
     if (!text) {
       throw new Error('Text is required')
     }
 
-    console.log('Received text length:', text.length)
+    // Limit text length to prevent memory issues
+    const truncatedText = text.slice(0, 4000)
+    console.log('Processing text:', truncatedText)
 
-    // Initialize OpenAI
     const openai = new OpenAI({
       apiKey: Deno.env.get('OPENAI_API_KEY')
     })
 
-    // Split long text into chunks of 4000 characters
-    const chunks = text.match(/.{1,4000}(?=\s|$)/g) || [text]
-    const audioChunks: ArrayBuffer[] = []
+    const mp3Response = await openai.audio.speech.create({
+      model: "tts-1",
+      voice: "echo",
+      input: truncatedText
+    })
 
-    console.log('Processing text in', chunks.length, 'chunks')
-
-    // Process each chunk
-    for (const chunk of chunks) {
-      const mp3Response = await openai.audio.speech.create({
-        model: "tts-1",
-        voice: "echo",
-        input: chunk
-      })
-
-      const audioBuffer = await mp3Response.arrayBuffer()
-      audioChunks.push(audioBuffer)
-    }
-
-    // Combine all audio chunks
-    const totalLength = audioChunks.reduce((acc, chunk) => acc + chunk.byteLength, 0)
-    const combinedAudio = new Uint8Array(totalLength)
-    let offset = 0
-
-    for (const chunk of audioChunks) {
-      combinedAudio.set(new Uint8Array(chunk), offset)
-      offset += chunk.byteLength
-    }
-
-    // Convert to base64
-    const base64Audio = btoa(String.fromCharCode(...combinedAudio))
+    const arrayBuffer = await mp3Response.arrayBuffer()
+    const uint8Array = new Uint8Array(arrayBuffer)
+    const base64Audio = btoa(String.fromCharCode.apply(null, uint8Array))
     const audioUrl = `data:audio/mp3;base64,${base64Audio}`
 
     console.log('Successfully generated audio')
@@ -67,12 +48,12 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Error in text-to-speech:', error)
+    console.error('Error:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     )
   }

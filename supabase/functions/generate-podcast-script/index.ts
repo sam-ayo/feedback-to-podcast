@@ -9,62 +9,57 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
     const { calls } = await req.json()
+    console.log('Received calls:', JSON.stringify(calls))
 
-    if (!calls || !Array.isArray(calls) || calls.length === 0) {
-      throw new Error('Valid calls array is required')
+    if (!calls || !Array.isArray(calls)) {
+      throw new Error('Invalid calls data')
     }
+
+    // Create a simpler summary for each call
+    const summaries = calls.map(call => `
+${call.title} (${call.platform}, ${call.duration})
+Key Points:
+${call.insights.join('\n')}
+`).join('\n\n')
 
     const openai = new OpenAI({
       apiKey: Deno.env.get('OPENAI_API_KEY')
     })
 
-    // Format meetings for the prompt
-    const meetingsContext = calls.map(call => `
-Meeting: ${call.title}
-Date: ${new Date(call.date).toLocaleDateString()}
-Platform: ${call.platform}
-Duration: ${call.duration}
-Key Points:
-${call.insights.map(insight => `- ${insight}`).join('\n')}
-    `).join('\n\n')
-
+    // Generate a simpler script
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
-          content: "You are writing a podcast script for a weekly meeting summary. Create a natural conversation between two hosts (Alex and Sarah) discussing the key points and insights from the meetings. Keep it concise, professional, and engaging."
+          content: "Create a brief, clear summary of the following meetings."
         },
         {
           role: "user",
-          content: `Create a podcast script summarizing these meetings:\n${meetingsContext}`
+          content: summaries
         }
       ]
     })
 
     const script = response.choices[0].message.content
-
-    console.log('Generated script successfully:', script.substring(0, 100) + '...')
+    console.log('Generated script:', script)
 
     return new Response(
       JSON.stringify({ 
         script,
-        structuredScript: [] // Empty array as we're using a single voice
+        structuredScript: null
       }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
   } catch (error) {
-    console.error('Error in generate-podcast-script:', error)
+    console.error('Error:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
