@@ -1,7 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
-import OpenAI from "https://esm.sh/openai@4.20.1"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,29 +14,38 @@ serve(async (req) => {
 
   try {
     const { text } = await req.json()
-    console.log('Received text length:', text?.length)
-
-    if (!text) {
-      throw new Error('Text is required')
+    
+    if (!text || typeof text !== 'string') {
+      throw new Error('Valid text is required')
     }
 
-    // Limit text length to prevent memory issues
-    const truncatedText = text.slice(0, 4000)
-    console.log('Processing text:', truncatedText)
+    console.log('Processing text of length:', text.length)
 
-    const openai = new OpenAI({
-      apiKey: Deno.env.get('OPENAI_API_KEY')
+    // OpenAI API for text-to-speech
+    const response = await fetch('https://api.openai.com/v1/audio/speech', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'tts-1',
+        input: text.slice(0, 4000), // Limit text length
+        voice: 'echo',
+        response_format: 'mp3',
+      }),
     })
 
-    const mp3Response = await openai.audio.speech.create({
-      model: "tts-1",
-      voice: "echo",
-      input: truncatedText
-    })
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error?.message || 'Failed to generate speech')
+    }
 
-    const arrayBuffer = await mp3Response.arrayBuffer()
-    const uint8Array = new Uint8Array(arrayBuffer)
-    const base64Audio = btoa(String.fromCharCode.apply(null, uint8Array))
+    // Convert audio to base64
+    const arrayBuffer = await response.arrayBuffer()
+    const base64Audio = btoa(
+      String.fromCharCode(...new Uint8Array(arrayBuffer))
+    )
     const audioUrl = `data:audio/mp3;base64,${base64Audio}`
 
     console.log('Successfully generated audio')
@@ -48,7 +56,7 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Error:', error)
+    console.error('Error in text-to-speech:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
