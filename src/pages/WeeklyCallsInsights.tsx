@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,31 +28,36 @@ interface WeeklyPodcast {
 
 const groupCallsByWeek = (calls: Call[]): WeeklyPodcast[] => {
   const weeks: { [key: string]: Call[] } = {};
-  
-  calls.forEach(call => {
+
+  calls.forEach((call) => {
     const date = new Date(call.date);
     const weekStart = new Date(date.setDate(date.getDate() - date.getDay()));
     const weekEnd = new Date(date.setDate(date.getDate() - date.getDay() + 6));
-    
-    const weekKey = weekStart.toISOString().split('T')[0];
+
+    const weekKey = weekStart.toISOString().split("T")[0];
     if (!weeks[weekKey]) {
       weeks[weekKey] = [];
     }
     weeks[weekKey].push(call);
   });
 
-  return Object.entries(weeks).map(([weekStart, calls], index) => {
-    const start = new Date(weekStart);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 6);
-    
-    return {
-      id: index + 1,
-      weekStart: start.toISOString().split('T')[0],
-      weekEnd: end.toISOString().split('T')[0],
-      numCalls: calls.length,
-    };
-  }).sort((a, b) => new Date(b.weekStart).getTime() - new Date(a.weekStart).getTime());
+  return Object.entries(weeks)
+    .map(([weekStart, calls], index) => {
+      const start = new Date(weekStart);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 6);
+
+      return {
+        id: index + 1,
+        weekStart: start.toISOString().split("T")[0],
+        weekEnd: end.toISOString().split("T")[0],
+        numCalls: calls.length,
+      };
+    })
+    .sort(
+      (a, b) =>
+        new Date(b.weekStart).getTime() - new Date(a.weekStart).getTime()
+    );
 };
 
 const MOCK_CALLS: Call[] = [
@@ -67,8 +71,8 @@ const MOCK_CALLS: Call[] = [
     insights: [
       "Discussed Q1 objectives and milestones",
       "Team agreed on new project timeline",
-      "Marketing strategy needs revision"
-    ]
+      "Marketing strategy needs revision",
+    ],
   },
   {
     id: 2,
@@ -80,8 +84,8 @@ const MOCK_CALLS: Call[] = [
     insights: [
       "New feature requirements outlined",
       "User feedback analysis presented",
-      "Priority bugs identified for next sprint"
-    ]
+      "Priority bugs identified for next sprint",
+    ],
   },
   {
     id: 3,
@@ -93,8 +97,8 @@ const MOCK_CALLS: Call[] = [
     insights: [
       "Client approved proposed design changes",
       "Budget increase requested for Q2",
-      "Follow-up meeting scheduled for next week"
-    ]
+      "Follow-up meeting scheduled for next week",
+    ],
   },
   {
     id: 4,
@@ -106,8 +110,8 @@ const MOCK_CALLS: Call[] = [
     insights: [
       "Q2 sales targets exceeded expectations",
       "Three new enterprise leads identified",
-      "Team restructuring proposed for better territory coverage"
-    ]
+      "Team restructuring proposed for better territory coverage",
+    ],
   },
   {
     id: 5,
@@ -119,8 +123,8 @@ const MOCK_CALLS: Call[] = [
     insights: [
       "Code deployment successful",
       "Performance improvements measured",
-      "Technical debt reduction plan approved"
-    ]
+      "Technical debt reduction plan approved",
+    ],
   },
   {
     id: 6,
@@ -132,14 +136,16 @@ const MOCK_CALLS: Call[] = [
     insights: [
       "Social media campaign results analyzed",
       "Content calendar approved for Q2",
-      "New brand guidelines presented"
-    ]
-  }
+      "New brand guidelines presented",
+    ],
+  },
 ];
 
 const WeeklyCallsInsights = () => {
   const { toast } = useToast();
-  const [weeklyPodcasts, setWeeklyPodcasts] = React.useState<WeeklyPodcast[]>([]);
+  const [weeklyPodcasts, setWeeklyPodcasts] = React.useState<WeeklyPodcast[]>(
+    []
+  );
   const [isLoading, setIsLoading] = React.useState(true);
 
   React.useEffect(() => {
@@ -151,63 +157,75 @@ const WeeklyCallsInsights = () => {
   const generatePodcast = async (weekStart: string, weekEnd: string) => {
     try {
       // Find relevant calls for the week
-      const weekCalls = MOCK_CALLS.filter(call => {
+      const weekCalls = MOCK_CALLS.filter((call) => {
         const callDate = new Date(call.date);
         return callDate >= new Date(weekStart) && callDate <= new Date(weekEnd);
       });
 
       // Update UI to show generation in progress
-      setWeeklyPodcasts(prev => prev.map(podcast => 
-        podcast.weekStart === weekStart ? { ...podcast, isGenerating: true } : podcast
-      ));
+      setWeeklyPodcasts((prev) =>
+        prev.map((podcast) =>
+          podcast.weekStart === weekStart
+            ? { ...podcast, isGenerating: true }
+            : podcast
+        )
+      );
 
       // Step 1: Generate the script
-      console.log('Generating script for calls:', weekCalls);
-      const scriptResponse = await supabase.functions.invoke('generate-podcast-script', {
-        body: { calls: weekCalls }
-      });
+      console.log("Generating script for calls:", weekCalls);
+      const scriptResponse = await supabase.functions.invoke(
+        "generate-podcast-script",
+        {
+          body: { feedback: weekCalls },
+        }
+      );
 
       if (scriptResponse.error) {
-        console.error('Script generation error:', scriptResponse.error);
-        throw new Error('Failed to generate script');
+        console.error("Script generation error:", scriptResponse.error);
+        throw new Error("Failed to generate script");
       }
 
       const script = scriptResponse.data.script;
-      console.log('Generated script:', script);
+      console.log("Generated script:", script);
 
       // Step 2: Convert script to speech
-      console.log('Converting script to speech');
-      const audioResponse = await supabase.functions.invoke('text-to-speech', {
-        body: { text: script }
+      console.log("Converting script to speech");
+      const audioResponse = await supabase.functions.invoke("text-to-speech", {
+        body: { text: script },
       });
 
       if (audioResponse.error) {
-        console.error('Audio generation error:', audioResponse.error);
-        throw new Error('Failed to generate audio');
+        console.error("Audio generation error:", audioResponse.error);
+        throw new Error("Failed to generate audio");
       }
 
       // Update the podcast with the generated audio URL
-      setWeeklyPodcasts(prev => prev.map(podcast => 
-        podcast.weekStart === weekStart 
-          ? { 
-              ...podcast, 
-              audioUrl: audioResponse.data.audioUrl, 
-              isGenerating: false 
-            } 
-          : podcast
-      ));
+      setWeeklyPodcasts((prev) =>
+        prev.map((podcast) =>
+          podcast.weekStart === weekStart
+            ? {
+                ...podcast,
+                audioUrl: audioResponse.data.audioUrl,
+                isGenerating: false,
+              }
+            : podcast
+        )
+      );
 
       toast({
         title: "Success",
         description: "Weekly podcast summary generated successfully!",
       });
-
     } catch (error) {
-      console.error('Error generating podcast:', error);
-      setWeeklyPodcasts(prev => prev.map(podcast => 
-        podcast.weekStart === weekStart ? { ...podcast, isGenerating: false } : podcast
-      ));
-      
+      console.error("Error generating podcast:", error);
+      setWeeklyPodcasts((prev) =>
+        prev.map((podcast) =>
+          podcast.weekStart === weekStart
+            ? { ...podcast, isGenerating: false }
+            : podcast
+        )
+      );
+
       toast({
         title: "Error",
         description: "Failed to generate podcast summary. Please try again.",
@@ -217,13 +235,15 @@ const WeeklyCallsInsights = () => {
   };
 
   const formatWeekRange = (start: string, end: string) => {
-    return `${new Date(start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${new Date(end).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+    return `${new Date(start).toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${new Date(end).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
   };
 
   if (isLoading) {
-    return <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex items-center justify-center">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-    </div>;
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
   }
 
   return (
@@ -237,7 +257,9 @@ const WeeklyCallsInsights = () => {
                 Back
               </Button>
             </Link>
-            <h1 className="text-2xl font-bold text-gray-900">Weekly Call Summaries</h1>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Weekly Call Summaries
+            </h1>
             <Link to="/calls/individual">
               <Button variant="outline" className="gap-2">
                 View Individual Calls
@@ -258,7 +280,8 @@ const WeeklyCallsInsights = () => {
                     <div className="flex justify-between items-start">
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900">
-                          Week of {formatWeekRange(podcast.weekStart, podcast.weekEnd)}
+                          Week of{" "}
+                          {formatWeekRange(podcast.weekStart, podcast.weekEnd)}
                         </h3>
                         <p className="text-sm text-gray-500">
                           {podcast.numCalls} calls summarized
@@ -266,7 +289,9 @@ const WeeklyCallsInsights = () => {
                       </div>
                       {!podcast.audioUrl && !podcast.isGenerating && (
                         <Button
-                          onClick={() => generatePodcast(podcast.weekStart, podcast.weekEnd)}
+                          onClick={() =>
+                            generatePodcast(podcast.weekStart, podcast.weekEnd)
+                          }
                           size="sm"
                         >
                           Generate Summary
@@ -279,7 +304,9 @@ const WeeklyCallsInsights = () => {
                         Generating podcast summary...
                       </div>
                     )}
-                    {podcast.audioUrl && <PodcastPreview audioUrl={podcast.audioUrl} />}
+                    {podcast.audioUrl && (
+                      <PodcastPreview audioUrl={podcast.audioUrl} />
+                    )}
                   </div>
                 </Card>
               ))}
