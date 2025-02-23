@@ -1,6 +1,8 @@
+
 import React from "react";
 import FeedbackInput from "@/components/FeedbackInput";
 import PodcastPreview from "@/components/PodcastPreview";
+import MeetingConnections from "@/components/MeetingConnections";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -32,7 +34,10 @@ const Index = () => {
       console.log("Converting to speech...");
       const { data: audioData, error: audioError } =
         await supabase.functions.invoke("text-to-speech", {
-          body: { text: scriptData.script },
+          body: { 
+            text: scriptData.script,
+            structuredScript: scriptData.structuredScript 
+          },
         });
 
       if (audioError) {
@@ -62,14 +67,16 @@ const Index = () => {
       <div className="container max-w-4xl py-12 px-4">
         <div className="text-center mb-12 space-y-4">
           <h1 className="text-4xl font-bold text-gray-900">
-            Podcast Generator
+            Meeting Insights to Podcast
           </h1>
           <p className="text-gray-600">
             Transform your meeting feedback into an AI-powered podcast
           </p>
         </div>
 
-        <div className="space-y-8">
+        <div className="space-y-16">
+          <MeetingConnections />
+
           <FeedbackInput onSubmit={handleFeedbackSubmit} />
 
           {isProcessing && (
