@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -69,7 +70,71 @@ const MOCK_CALLS: Call[] = [
       "Marketing strategy needs revision"
     ]
   },
-  // ... keep existing code (other mock calls)
+  {
+    id: 2,
+    platform: "Microsoft Teams",
+    title: "Product Review",
+    date: "2024-03-18T15:30:00",
+    duration: "60 mins",
+    participants: 12,
+    insights: [
+      "New feature requirements outlined",
+      "User feedback analysis presented",
+      "Priority bugs identified for next sprint"
+    ]
+  },
+  {
+    id: 3,
+    platform: "Google Meet",
+    title: "Client Presentation",
+    date: "2024-03-19T14:00:00",
+    duration: "30 mins",
+    participants: 5,
+    insights: [
+      "Client approved proposed design changes",
+      "Budget increase requested for Q2",
+      "Follow-up meeting scheduled for next week"
+    ]
+  },
+  {
+    id: 4,
+    platform: "Zoom",
+    title: "Sales Pipeline Review",
+    date: "2024-03-11T09:00:00",
+    duration: "45 mins",
+    participants: 6,
+    insights: [
+      "Q2 sales targets exceeded expectations",
+      "Three new enterprise leads identified",
+      "Team restructuring proposed for better territory coverage"
+    ]
+  },
+  {
+    id: 5,
+    platform: "Microsoft Teams",
+    title: "Engineering Standup",
+    date: "2024-03-12T11:00:00",
+    duration: "30 mins",
+    participants: 10,
+    insights: [
+      "Code deployment successful",
+      "Performance improvements measured",
+      "Technical debt reduction plan approved"
+    ]
+  },
+  {
+    id: 6,
+    platform: "Zoom",
+    title: "Marketing Strategy",
+    date: "2024-03-13T13:00:00",
+    duration: "60 mins",
+    participants: 7,
+    insights: [
+      "Social media campaign results analyzed",
+      "Content calendar approved for Q2",
+      "New brand guidelines presented"
+    ]
+  }
 ];
 
 const WeeklyCallsInsights = () => {
