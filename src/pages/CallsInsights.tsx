@@ -2,8 +2,9 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Clock, Users } from "lucide-react";
+import { ArrowLeft, Clock, Users, Podcast } from "lucide-react";
 import { Link } from "react-router-dom";
+import PodcastPreview from "@/components/PodcastPreview";
 
 // Mock data for demonstration
 const MOCK_CALLS = [
@@ -48,6 +49,24 @@ const MOCK_CALLS = [
   }
 ];
 
+// Mock weekly podcast data
+const MOCK_WEEKLY_PODCASTS = [
+  {
+    id: 1,
+    weekStart: "2024-03-18",
+    weekEnd: "2024-03-24",
+    audioUrl: "https://example.com/podcast1.mp3", // Replace with actual audio URL
+    numCalls: 5,
+  },
+  {
+    id: 2,
+    weekStart: "2024-03-11",
+    weekEnd: "2024-03-17",
+    audioUrl: "https://example.com/podcast2.mp3", // Replace with actual audio URL
+    numCalls: 4,
+  }
+];
+
 const CallsInsights = () => {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -58,10 +77,14 @@ const CallsInsights = () => {
     });
   };
 
+  const formatWeekRange = (start: string, end: string) => {
+    return `${new Date(start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${new Date(end).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
       <div className="container max-w-4xl py-12 px-4">
-        <div className="space-y-8">
+        <div className="space-y-12">
           <div className="flex items-center justify-between">
             <Link to="/">
               <Button variant="ghost" className="gap-2">
@@ -73,46 +96,77 @@ const CallsInsights = () => {
             <div className="w-24" /> {/* Spacer for alignment */}
           </div>
 
-          <div className="space-y-4">
-            {MOCK_CALLS.map((call) => (
-              <Card key={call.id} className="p-6 hover:shadow-lg transition-shadow">
-                <div className="space-y-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {call.title}
-                      </h3>
-                      <p className="text-sm text-gray-500">
-                        {call.platform} • {formatDate(call.date)}
-                      </p>
+          {/* Weekly Podcasts Section */}
+          <div className="space-y-6">
+            <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+              <Podcast className="w-5 h-5" />
+              Weekly Call Summaries
+            </h2>
+            <div className="grid gap-6">
+              {MOCK_WEEKLY_PODCASTS.map((podcast) => (
+                <Card key={podcast.id} className="p-6">
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          Week of {formatWeekRange(podcast.weekStart, podcast.weekEnd)}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          {podcast.numCalls} calls summarized
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-500">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        {call.duration}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Users className="w-4 h-4" />
-                        {call.participants}
-                      </span>
-                    </div>
+                    <PodcastPreview audioUrl={podcast.audioUrl} />
                   </div>
+                </Card>
+              ))}
+            </div>
+          </div>
 
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">
-                      Key Insights
-                    </h4>
-                    <ul className="list-disc list-inside space-y-1">
-                      {call.insights.map((insight, index) => (
-                        <li key={index} className="text-sm text-gray-600">
-                          {insight}
-                        </li>
-                      ))}
-                    </ul>
+          {/* Individual Calls Section */}
+          <div className="space-y-6">
+            <h2 className="text-xl font-semibold text-gray-900">Individual Calls</h2>
+            <div className="space-y-4">
+              {MOCK_CALLS.map((call) => (
+                <Card key={call.id} className="p-6 hover:shadow-lg transition-shadow">
+                  <div className="space-y-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {call.title}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          {call.platform} • {formatDate(call.date)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          {call.duration}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Users className="w-4 h-4" />
+                          {call.participants}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">
+                        Key Insights
+                      </h4>
+                      <ul className="list-disc list-inside space-y-1">
+                        {call.insights.map((insight, index) => (
+                          <li key={index} className="text-sm text-gray-600">
+                            {insight}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
-                </div>
-              </Card>
-            ))}
+                </Card>
+              ))}
+            </div>
           </div>
         </div>
       </div>
