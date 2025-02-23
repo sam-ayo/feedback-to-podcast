@@ -19,8 +19,17 @@ interface Host {
   }
 }
 
+interface DialogueSegment {
+  host_id: string
+  text: string
+}
+
+interface DialogueScript {
+  segments: DialogueSegment[]
+}
+
 const HOSTS: Record<string, Host> = {
-  Alex: {
+  "pNInz6obpgDQGcFmaJgB": {
     voiceId: "pNInz6obpgDQGcFmaJgB",
     name: "Alex",
     description: "Professional and engaging male host with a warm tone",
@@ -29,7 +38,7 @@ const HOSTS: Record<string, Host> = {
       similarity_boost: 0.75
     }
   },
-  Sarah: {
+  "EXAVITQu4vr4xnSDxMaL": {
     voiceId: "EXAVITQu4vr4xnSDxMaL",
     name: "Sarah",
     description: "Friendly and articulate female host with a natural conversational style",
@@ -100,10 +109,10 @@ serve(async (req) => {
   }
 
   try {
-    const { text } = await req.json()
+    const { text, structuredScript } = await req.json()
 
-    if (!text) {
-      throw new Error('Text is required')
+    if (!text && !structuredScript) {
+      throw new Error('Either text or structuredScript is required')
     }
 
     console.log('Starting text-to-speech conversion...')
@@ -121,20 +130,35 @@ serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
-
-    const lines = text.split('\n').filter(line => line.trim())
     const audioBuffers: ArrayBuffer[] = []
 
-    for (const line of lines) {
-      const [speaker, ...textParts] = line.split(':')
-      const speakerName = speaker.trim()
-      const lineText = textParts.join(':').trim()
-
-      const host = HOSTS[speakerName]
-      if (lineText && host) {
-        console.log(`Generating speech for ${host.name}: ${lineText.substring(0, 50)}...`)
-        const audioBuffer = await generateSpeech(lineText, host, apiKey)
-        audioBuffers.push(audioBuffer)
+    if (structuredScript) {
+      // Process structured script
+      for (const segment of structuredScript.segments) {
+        const host = HOSTS[segment.host_id]
+        if (segment.text && host) {
+          console.log(`Generating speech for ${host.name}: ${segment.text.substring(0, 50)}...`)
+          const audioBuffer = await generateSpeech(segment.text, host, apiKey)
+          audioBuffers.push(audioBuffer)
+        }
+      }
+    } else {
+      // Fallback to processing plain text script
+      const lines = text.split('\n').filter(line => line.trim())
+      for (const line of lines) {
+        const [speaker, ...textParts] = line.split(':')
+        const speakerName = speaker.trim()
+        const lineText = textParts.join(':').trim()
+        
+        // Map speaker names to host IDs
+        const hostId = speakerName === "Alex" ? "pNInz6obpgDQGcFmaJgB" : "EXAVITQu4vr4xnSDxMaL"
+        const host = HOSTS[hostId]
+        
+        if (lineText && host) {
+          console.log(`Generating speech for ${host.name}: ${lineText.substring(0, 50)}...`)
+          const audioBuffer = await generateSpeech(lineText, host, apiKey)
+          audioBuffers.push(audioBuffer)
+        }
       }
     }
 
