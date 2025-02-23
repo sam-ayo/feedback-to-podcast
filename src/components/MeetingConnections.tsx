@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -27,6 +27,9 @@ const MEETING_PLATFORMS = [
 ];
 
 const MeetingConnections = () => {
+  const [showAll, setShowAll] = useState(false);
+  const displayedPlatforms = showAll ? MEETING_PLATFORMS : MEETING_PLATFORMS.slice(0, 3);
+
   return (
     <div className="space-y-8">
       <div className="text-center space-y-4">
@@ -38,8 +41,8 @@ const MeetingConnections = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {MEETING_PLATFORMS.map((platform) => (
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        {displayedPlatforms.map((platform) => (
           <Card
             key={platform.name}
             className="p-6 hover:shadow-lg transition-shadow backdrop-blur-sm bg-white/50 cursor-pointer"
@@ -61,11 +64,17 @@ const MeetingConnections = () => {
         ))}
       </div>
 
-      <div className="text-center">
-        <Button variant="outline" className="mt-6">
-          View More
-        </Button>
-      </div>
+      {MEETING_PLATFORMS.length > 3 && (
+        <div className="text-center">
+          <Button 
+            variant="outline" 
+            className="mt-6"
+            onClick={() => setShowAll(!showAll)}
+          >
+            {showAll ? "Show Less" : "View More"}
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
