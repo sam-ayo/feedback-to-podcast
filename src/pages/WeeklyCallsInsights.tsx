@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -142,12 +141,6 @@ const WeeklyCallsInsights = () => {
   const [weeklyPodcasts, setWeeklyPodcasts] = React.useState<WeeklyPodcast[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
 
-  React.useEffect(() => {
-    const grouped = groupCallsByWeek(MOCK_CALLS);
-    setWeeklyPodcasts(grouped);
-    setIsLoading(false);
-  }, []);
-
   const generatePodcast = async (weekStart: string, weekEnd: string) => {
     try {
       const weekCalls = MOCK_CALLS.filter(call => {
@@ -186,11 +179,6 @@ const WeeklyCallsInsights = () => {
           : podcast
       ));
 
-      toast({
-        title: "Success",
-        description: "Weekly podcast summary generated successfully!",
-      });
-
     } catch (error) {
       console.error('Error generating podcast:', error);
       toast({
@@ -204,6 +192,23 @@ const WeeklyCallsInsights = () => {
       ));
     }
   };
+
+  React.useEffect(() => {
+    const initializePodcasts = async () => {
+      const grouped = groupCallsByWeek(MOCK_CALLS);
+      setWeeklyPodcasts(grouped);
+      
+      for (const podcast of grouped) {
+        if (!podcast.audioUrl) {
+          await generatePodcast(podcast.weekStart, podcast.weekEnd);
+        }
+      }
+      
+      setIsLoading(false);
+    };
+
+    initializePodcasts();
+  }, []);
 
   const formatWeekRange = (start: string, end: string) => {
     return `${new Date(start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${new Date(end).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
@@ -253,14 +258,6 @@ const WeeklyCallsInsights = () => {
                           {podcast.numCalls} calls summarized
                         </p>
                       </div>
-                      {!podcast.audioUrl && !podcast.isGenerating && (
-                        <Button
-                          onClick={() => generatePodcast(podcast.weekStart, podcast.weekEnd)}
-                          size="sm"
-                        >
-                          Generate Summary
-                        </Button>
-                      )}
                     </div>
                     {podcast.isGenerating && (
                       <div className="flex items-center gap-2 text-sm text-gray-500">
