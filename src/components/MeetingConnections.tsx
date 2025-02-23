@@ -19,6 +19,11 @@ const MEETING_PLATFORMS = [
     icon: "/lovable-uploads/3b32a131-94e7-44ec-9162-26509b84d144.png",
     action: () => console.log("Connecting to Google Meet..."),
   },
+  {
+    name: "Dial Pad",
+    icon: "/lovable-uploads/39d733de-6aa7-47b5-ad16-9b396e7b4181.png",
+    action: () => console.log("Opening Dial Pad..."),
+  },
 ];
 
 const MeetingConnections = () => {
@@ -33,7 +38,7 @@ const MeetingConnections = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {MEETING_PLATFORMS.map((platform) => (
           <Card
             key={platform.name}
