@@ -16,7 +16,7 @@ const MEETING_PLATFORMS = [
   },
   {
     name: "Google Meet",
-    icon: "/lovable-uploads/d725522d-d449-4284-ad8c-34b718fcec60.png#meet",
+    icon: "/lovable-uploads/3b32a131-94e7-44ec-9162-26509b84d144.png",
     action: () => console.log("Connecting to Google Meet..."),
   },
 ];
