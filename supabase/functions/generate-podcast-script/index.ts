@@ -8,14 +8,14 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Define the structure for our dialogue segments
-interface DialogueSegment {
-  host_id: "pNInz6obpgDQGcFmaJgB" | "EXAVITQu4vr4xnSDxMaL"
-  text: string
-}
-
-interface DialogueScript {
-  segments: DialogueSegment[]
+interface Call {
+  id: number;
+  platform: string;
+  title: string;
+  date: string;
+  duration: string;
+  participants: number;
+  insights: string[];
 }
 
 serve(async (req) => {
@@ -24,73 +24,69 @@ serve(async (req) => {
   }
 
   try {
-    const { feedback } = await req.json()
+    const { calls } = await req.json()
 
-    if (!feedback) {
-      throw new Error('Feedback is required')
+    if (!calls || !Array.isArray(calls)) {
+      throw new Error('Calls array is required')
     }
 
     const openai = new OpenAI({
       apiKey: Deno.env.get('OPENAI_API_KEY')
     })
 
+    // Create a summary of all calls for this week
+    const weeklySummary = calls.map(call => {
+      return `Meeting: ${call.title}
+Date: ${new Date(call.date).toLocaleDateString()}
+Platform: ${call.platform}
+Duration: ${call.duration}
+Key Insights:
+${call.insights.map(insight => `- ${insight}`).join('\n')}
+`
+    }).join('\n\n')
+
+    // Generate a conversational podcast script
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
-          content: `You are a podcast script writer. Create a discussion between two hosts about the given meeting feedback. 
-          Structure the output as an array of dialogue segments, where each segment contains:
-          - host_id: "pNInz6obpgDQGcFmaJgB" for Alex (male host) or "EXAVITQu4vr4xnSDxMaL" for Sarah (female host)
-          - text: The spoken dialogue for that segment
-
-          Make the dialogue natural and engaging, with both hosts contributing equally to the discussion.
-          Format your response as valid JSON matching this structure:
-          {
-            "segments": [
-              {
-                "host_id": "pNInz6obpgDQGcFmaJgB",
-                "text": "Hello and welcome..."
-              },
-              {
-                "host_id": "EXAVITQu4vr4xnSDxMaL",
-                "text": "Thanks Alex..."
-              }
-            ]
-          }`
+          content: `You are writing a podcast script for a 30-minute show discussing the week's meetings. 
+          Create a natural conversation between two hosts (Alex and Sarah) summarizing the key points and insights.
+          Format as a structured dialogue with clear speaker indicators.
+          Start with a brief intro and end with a conclusion.`
         },
         {
           role: "user",
-          content: `Create a podcast script discussing this meeting feedback: ${feedback}`
+          content: `Create a podcast script based on these meeting summaries:\n\n${weeklySummary}`
         }
-      ],
-      response_format: { type: "json_object" }
+      ]
     })
 
-    const structuredScript = JSON.parse(response.choices[0].message.content) as DialogueScript
+    const script = response.choices[0].message.content
 
-    // Convert structured script to formatted text
-    const formattedScript = structuredScript.segments
-      .map(segment => {
-        const hostName = segment.host_id === "pNInz6obpgDQGcFmaJgB" ? "Alex" : "Sarah"
-        return `${hostName}: ${segment.text}`
-      })
-      .join('\n')
+    // Structure the script for text-to-speech processing
+    const structuredScript = script.split('\n').reduce((acc, line) => {
+      if (line.startsWith('Alex:')) {
+        acc.push({ host_id: 'pNInz6obpgDQGcFmaJgB', text: line.replace('Alex:', '').trim() })
+      } else if (line.startsWith('Sarah:')) {
+        acc.push({ host_id: 'EXAVITQu4vr4xnSDxMaL', text: line.replace('Sarah:', '').trim() })
+      }
+      return acc
+    }, [] as { host_id: string, text: string }[])
 
     return new Response(
-      JSON.stringify({ 
-        script: formattedScript,
-        structuredScript: structuredScript
-      }),
+      JSON.stringify({ script, structuredScript }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
+
   } catch (error) {
-    console.error('Error in generate-podcast-script function:', error)
+    console.error('Error in generate-podcast-script:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
-      { 
+      {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     )
   }
