@@ -1,33 +1,154 @@
-
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Podcast, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import PodcastPreview from "@/components/PodcastPreview";
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
-// Mock weekly podcast data
-const MOCK_WEEKLY_PODCASTS = [
+interface Call {
+  id: number;
+  platform: string;
+  title: string;
+  date: string;
+  duration: string;
+  participants: number;
+  insights: string[];
+}
+
+interface WeeklyPodcast {
+  id: number;
+  weekStart: string;
+  weekEnd: string;
+  audioUrl?: string;
+  numCalls: number;
+  isGenerating?: boolean;
+}
+
+const groupCallsByWeek = (calls: Call[]): WeeklyPodcast[] => {
+  const weeks: { [key: string]: Call[] } = {};
+  
+  calls.forEach(call => {
+    const date = new Date(call.date);
+    const weekStart = new Date(date.setDate(date.getDate() - date.getDay()));
+    const weekEnd = new Date(date.setDate(date.getDate() - date.getDay() + 6));
+    
+    const weekKey = weekStart.toISOString().split('T')[0];
+    if (!weeks[weekKey]) {
+      weeks[weekKey] = [];
+    }
+    weeks[weekKey].push(call);
+  });
+
+  return Object.entries(weeks).map(([weekStart, calls], index) => {
+    const start = new Date(weekStart);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 6);
+    
+    return {
+      id: index + 1,
+      weekStart: start.toISOString().split('T')[0],
+      weekEnd: end.toISOString().split('T')[0],
+      numCalls: calls.length,
+    };
+  }).sort((a, b) => new Date(b.weekStart).getTime() - new Date(a.weekStart).getTime());
+};
+
+const MOCK_CALLS: Call[] = [
   {
     id: 1,
-    weekStart: "2024-03-18",
-    weekEnd: "2024-03-24",
-    audioUrl: "https://example.com/podcast1.mp3",
-    numCalls: 5,
+    platform: "Zoom",
+    title: "Weekly Team Sync",
+    date: "2024-03-18T10:00:00",
+    duration: "45 mins",
+    participants: 8,
+    insights: [
+      "Discussed Q1 objectives and milestones",
+      "Team agreed on new project timeline",
+      "Marketing strategy needs revision"
+    ]
   },
-  {
-    id: 2,
-    weekStart: "2024-03-11",
-    weekEnd: "2024-03-17",
-    audioUrl: "https://example.com/podcast2.mp3",
-    numCalls: 4,
-  }
+  // ... keep existing code (other mock calls)
 ];
 
 const WeeklyCallsInsights = () => {
+  const { toast } = useToast();
+  const [weeklyPodcasts, setWeeklyPodcasts] = React.useState<WeeklyPodcast[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const grouped = groupCallsByWeek(MOCK_CALLS);
+    setWeeklyPodcasts(grouped);
+    setIsLoading(false);
+  }, []);
+
+  const generatePodcast = async (weekStart: string, weekEnd: string) => {
+    try {
+      const weekCalls = MOCK_CALLS.filter(call => {
+        const callDate = new Date(call.date);
+        return callDate >= new Date(weekStart) && callDate <= new Date(weekEnd);
+      });
+
+      setWeeklyPodcasts(prev => prev.map(podcast => 
+        podcast.weekStart === weekStart ? { ...podcast, isGenerating: true } : podcast
+      ));
+
+      const { data: scriptData, error: scriptError } = await supabase.functions.invoke(
+        "generate-podcast-script",
+        {
+          body: { calls: weekCalls }
+        }
+      );
+
+      if (scriptError) throw scriptError;
+
+      const { data: audioData, error: audioError } = await supabase.functions.invoke(
+        "text-to-speech",
+        {
+          body: { 
+            text: scriptData.script,
+            structuredScript: scriptData.structuredScript
+          }
+        }
+      );
+
+      if (audioError) throw audioError;
+
+      setWeeklyPodcasts(prev => prev.map(podcast => 
+        podcast.weekStart === weekStart 
+          ? { ...podcast, audioUrl: audioData.audioUrl, isGenerating: false }
+          : podcast
+      ));
+
+      toast({
+        title: "Success",
+        description: "Weekly podcast summary generated successfully!",
+      });
+
+    } catch (error) {
+      console.error('Error generating podcast:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate podcast summary. Please try again.",
+        variant: "destructive",
+      });
+
+      setWeeklyPodcasts(prev => prev.map(podcast => 
+        podcast.weekStart === weekStart ? { ...podcast, isGenerating: false } : podcast
+      ));
+    }
+  };
+
   const formatWeekRange = (start: string, end: string) => {
     return `${new Date(start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${new Date(end).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
   };
+
+  if (isLoading) {
+    return <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex items-center justify-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+    </div>;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
@@ -55,7 +176,7 @@ const WeeklyCallsInsights = () => {
               <p>30-minute AI-generated summaries of your weekly calls</p>
             </div>
             <div className="grid gap-6">
-              {MOCK_WEEKLY_PODCASTS.map((podcast) => (
+              {weeklyPodcasts.map((podcast) => (
                 <Card key={podcast.id} className="p-6">
                   <div className="space-y-4">
                     <div className="flex justify-between items-start">
@@ -67,8 +188,22 @@ const WeeklyCallsInsights = () => {
                           {podcast.numCalls} calls summarized
                         </p>
                       </div>
+                      {!podcast.audioUrl && !podcast.isGenerating && (
+                        <Button
+                          onClick={() => generatePodcast(podcast.weekStart, podcast.weekEnd)}
+                          size="sm"
+                        >
+                          Generate Summary
+                        </Button>
+                      )}
                     </div>
-                    <PodcastPreview audioUrl={podcast.audioUrl} />
+                    {podcast.isGenerating && (
+                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                        Generating podcast summary...
+                      </div>
+                    )}
+                    {podcast.audioUrl && <PodcastPreview audioUrl={podcast.audioUrl} />}
                   </div>
                 </Card>
               ))}
