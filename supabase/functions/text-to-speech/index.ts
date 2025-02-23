@@ -1,21 +1,11 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-// Efficiently convert array buffer to base64
-function arrayBufferToBase64(buffer: ArrayBuffer) {
-  const bytes = new Uint8Array(buffer);
-  const len = bytes.byteLength;
-  let binary = '';
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
 }
 
 serve(async (req) => {
@@ -31,6 +21,12 @@ serve(async (req) => {
     }
 
     console.log('Processing text of length:', text.length)
+
+    // Initialize Supabase client
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
 
     // ElevenLabs API for text-to-speech
     const response = await fetch('https://api.elevenlabs.io/v1/text-to-speech/CwhRBWXzGAHq8TQ4Fs17', {
@@ -55,15 +51,36 @@ serve(async (req) => {
       throw new Error(error.detail?.message || 'Failed to generate speech')
     }
 
-    // Convert audio to base64 using our optimized function
-    const arrayBuffer = await response.arrayBuffer()
-    const base64Audio = arrayBufferToBase64(arrayBuffer)
-    const audioUrl = `data:audio/mpeg;base64,${base64Audio}`
+    // Get the audio data as array buffer
+    const audioBuffer = await response.arrayBuffer()
+    
+    // Generate a unique filename
+    const filename = `podcast_${new Date().toISOString()}.mp3`
 
-    console.log('Successfully generated audio with ElevenLabs')
+    // Upload to Supabase Storage
+    const { data: uploadData, error: uploadError } = await supabaseAdmin
+      .storage
+      .from('podcast_audio')
+      .upload(filename, new Uint8Array(audioBuffer), {
+        contentType: 'audio/mpeg',
+        upsert: false
+      })
+
+    if (uploadError) {
+      console.error('Upload error:', uploadError)
+      throw new Error('Failed to upload audio file')
+    }
+
+    // Get the public URL for the uploaded file
+    const { data: { publicUrl } } = supabaseAdmin
+      .storage
+      .from('podcast_audio')
+      .getPublicUrl(filename)
+
+    console.log('Successfully generated and uploaded audio')
 
     return new Response(
-      JSON.stringify({ audioUrl }),
+      JSON.stringify({ audioUrl: publicUrl }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
