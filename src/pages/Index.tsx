@@ -1,3 +1,4 @@
+
 import React from "react";
 import MeetingConnections from "@/components/MeetingConnections";
 import { Button } from "@/components/ui/button";
@@ -12,9 +13,9 @@ const Index = () => {
           <MeetingConnections />
 
           <div className="text-center">
-            <Link to="/feedback">
+            <Link to="/calls">
               <Button className="gap-2">
-                Continue to Podcast Creation
+                View Meeting Insights
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
