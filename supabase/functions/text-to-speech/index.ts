@@ -14,34 +14,35 @@ serve(async (req) => {
   }
 
   try {
-    const { text, structuredScript } = await req.json()
+    const { text } = await req.json()
 
-    if (!text || !structuredScript) {
-      throw new Error('Text and structured script are required')
+    if (!text) {
+      throw new Error('Text is required')
     }
 
-    // Initialize OpenAI
     const openai = new OpenAI({
       apiKey: Deno.env.get('OPENAI_API_KEY')
     })
 
-    // Generate speech using TTS
+    // Generate speech
     const mp3Response = await openai.audio.speech.create({
       model: "tts-1",
-      voice: "echo", // A neutral voice that works well for podcast content
-      input: text,
+      voice: "echo",
+      input: text
     })
 
-    // Convert the audio buffer to base64
+    // Convert to base64
     const arrayBuffer = await mp3Response.arrayBuffer()
     const base64Audio = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
-
-    // Create a data URL that can be used directly in an audio element
     const audioUrl = `data:audio/mp3;base64,${base64Audio}`
+
+    console.log('Generated audio successfully')
 
     return new Response(
       JSON.stringify({ audioUrl }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
     )
 
   } catch (error) {
@@ -50,7 +51,7 @@ serve(async (req) => {
       JSON.stringify({ error: error.message }),
       { 
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     )
   }

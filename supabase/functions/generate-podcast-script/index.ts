@@ -8,17 +8,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-interface Call {
-  id: number;
-  platform: string;
-  title: string;
-  date: string;
-  duration: string;
-  participants: number;
-  insights: string[];
-}
-
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -26,67 +17,59 @@ serve(async (req) => {
   try {
     const { calls } = await req.json()
 
-    if (!calls || !Array.isArray(calls)) {
-      throw new Error('Calls array is required')
+    if (!calls || !Array.isArray(calls) || calls.length === 0) {
+      throw new Error('Valid calls array is required')
     }
 
     const openai = new OpenAI({
       apiKey: Deno.env.get('OPENAI_API_KEY')
     })
 
-    // Create a summary of all calls for this week
-    const weeklySummary = calls.map(call => {
-      return `Meeting: ${call.title}
+    // Format meetings for the prompt
+    const meetingsContext = calls.map(call => `
+Meeting: ${call.title}
 Date: ${new Date(call.date).toLocaleDateString()}
 Platform: ${call.platform}
 Duration: ${call.duration}
-Key Insights:
+Key Points:
 ${call.insights.map(insight => `- ${insight}`).join('\n')}
-`
-    }).join('\n\n')
+    `).join('\n\n')
 
-    // Generate a conversational podcast script
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
-          content: `You are writing a podcast script for a 30-minute show discussing the week's meetings. 
-          Create a natural conversation between two hosts (Alex and Sarah) summarizing the key points and insights.
-          Format as a structured dialogue with clear speaker indicators.
-          Start with a brief intro and end with a conclusion.`
+          content: "You are writing a podcast script for a weekly meeting summary. Create a natural conversation between two hosts (Alex and Sarah) discussing the key points and insights from the meetings. Keep it concise, professional, and engaging."
         },
         {
           role: "user",
-          content: `Create a podcast script based on these meeting summaries:\n\n${weeklySummary}`
+          content: `Create a podcast script summarizing these meetings:\n${meetingsContext}`
         }
       ]
     })
 
     const script = response.choices[0].message.content
 
-    // Structure the script for text-to-speech processing
-    const structuredScript = script.split('\n').reduce((acc, line) => {
-      if (line.startsWith('Alex:')) {
-        acc.push({ host_id: 'pNInz6obpgDQGcFmaJgB', text: line.replace('Alex:', '').trim() })
-      } else if (line.startsWith('Sarah:')) {
-        acc.push({ host_id: 'EXAVITQu4vr4xnSDxMaL', text: line.replace('Sarah:', '').trim() })
-      }
-      return acc
-    }, [] as { host_id: string, text: string }[])
+    console.log('Generated script successfully:', script.substring(0, 100) + '...')
 
     return new Response(
-      JSON.stringify({ script, structuredScript }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ 
+        script,
+        structuredScript: [] // Empty array as we're using a single voice
+      }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
     )
 
   } catch (error) {
     console.error('Error in generate-podcast-script:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
-      {
+      { 
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     )
   }
