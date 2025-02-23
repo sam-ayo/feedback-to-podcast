@@ -20,29 +20,50 @@ serve(async (req) => {
       throw new Error('Text is required')
     }
 
+    console.log('Received text length:', text.length)
+
+    // Initialize OpenAI
     const openai = new OpenAI({
       apiKey: Deno.env.get('OPENAI_API_KEY')
     })
 
-    // Generate speech
-    const mp3Response = await openai.audio.speech.create({
-      model: "tts-1",
-      voice: "echo",
-      input: text
-    })
+    // Split long text into chunks of 4000 characters
+    const chunks = text.match(/.{1,4000}(?=\s|$)/g) || [text]
+    const audioChunks: ArrayBuffer[] = []
+
+    console.log('Processing text in', chunks.length, 'chunks')
+
+    // Process each chunk
+    for (const chunk of chunks) {
+      const mp3Response = await openai.audio.speech.create({
+        model: "tts-1",
+        voice: "echo",
+        input: chunk
+      })
+
+      const audioBuffer = await mp3Response.arrayBuffer()
+      audioChunks.push(audioBuffer)
+    }
+
+    // Combine all audio chunks
+    const totalLength = audioChunks.reduce((acc, chunk) => acc + chunk.byteLength, 0)
+    const combinedAudio = new Uint8Array(totalLength)
+    let offset = 0
+
+    for (const chunk of audioChunks) {
+      combinedAudio.set(new Uint8Array(chunk), offset)
+      offset += chunk.byteLength
+    }
 
     // Convert to base64
-    const arrayBuffer = await mp3Response.arrayBuffer()
-    const base64Audio = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
+    const base64Audio = btoa(String.fromCharCode(...combinedAudio))
     const audioUrl = `data:audio/mp3;base64,${base64Audio}`
 
-    console.log('Generated audio successfully')
+    console.log('Successfully generated audio')
 
     return new Response(
       JSON.stringify({ audioUrl }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
   } catch (error) {
@@ -51,7 +72,7 @@ serve(async (req) => {
       JSON.stringify({ error: error.message }),
       { 
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     )
   }
