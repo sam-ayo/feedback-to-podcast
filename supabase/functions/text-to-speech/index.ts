@@ -7,6 +7,17 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Efficiently convert array buffer to base64
+function arrayBufferToBase64(buffer: ArrayBuffer) {
+  const bytes = new Uint8Array(buffer);
+  const len = bytes.byteLength;
+  let binary = '';
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -41,11 +52,9 @@ serve(async (req) => {
       throw new Error(error.error?.message || 'Failed to generate speech')
     }
 
-    // Convert audio to base64
+    // Convert audio to base64 using our optimized function
     const arrayBuffer = await response.arrayBuffer()
-    const base64Audio = btoa(
-      String.fromCharCode(...new Uint8Array(arrayBuffer))
-    )
+    const base64Audio = arrayBufferToBase64(arrayBuffer)
     const audioUrl = `data:audio/mp3;base64,${base64Audio}`
 
     console.log('Successfully generated audio')
