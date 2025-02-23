@@ -41,11 +41,11 @@ const MeetingConnections = () => {
             onClick={platform.action}
           >
             <div className="flex flex-col items-center space-y-4">
-              <div className="w-16 h-16 rounded-2xl bg-white shadow-sm p-2 flex items-center justify-center">
+              <div className="w-24 h-24 rounded-2xl bg-white shadow-sm p-3 flex items-center justify-center">
                 <img
                   src={platform.icon}
                   alt={platform.name}
-                  className="w-10 h-10 object-contain"
+                  className="w-16 h-16 object-contain"
                 />
               </div>
               <span className="text-sm font-medium text-gray-700">
