@@ -150,39 +150,50 @@ const WeeklyCallsInsights = () => {
 
   const generatePodcast = async (weekStart: string, weekEnd: string) => {
     try {
+      // Find relevant calls for the week
       const weekCalls = MOCK_CALLS.filter(call => {
         const callDate = new Date(call.date);
         return callDate >= new Date(weekStart) && callDate <= new Date(weekEnd);
       });
 
+      // Update UI to show generation in progress
       setWeeklyPodcasts(prev => prev.map(podcast => 
         podcast.weekStart === weekStart ? { ...podcast, isGenerating: true } : podcast
       ));
 
-      const { data: scriptData, error: scriptError } = await supabase.functions.invoke(
-        "generate-podcast-script",
-        {
-          body: { calls: weekCalls }
-        }
-      );
+      // Step 1: Generate the script
+      console.log('Generating script for calls:', weekCalls);
+      const scriptResponse = await supabase.functions.invoke('generate-podcast-script', {
+        body: { calls: weekCalls }
+      });
 
-      if (scriptError) throw scriptError;
+      if (scriptResponse.error) {
+        console.error('Script generation error:', scriptResponse.error);
+        throw new Error('Failed to generate script');
+      }
 
-      const { data: audioData, error: audioError } = await supabase.functions.invoke(
-        "text-to-speech",
-        {
-          body: { 
-            text: scriptData.script,
-            structuredScript: scriptData.structuredScript
-          }
-        }
-      );
+      const script = scriptResponse.data.script;
+      console.log('Generated script:', script);
 
-      if (audioError) throw audioError;
+      // Step 2: Convert script to speech
+      console.log('Converting script to speech');
+      const audioResponse = await supabase.functions.invoke('text-to-speech', {
+        body: { text: script }
+      });
 
+      if (audioResponse.error) {
+        console.error('Audio generation error:', audioResponse.error);
+        throw new Error('Failed to generate audio');
+      }
+
+      // Update the podcast with the generated audio URL
       setWeeklyPodcasts(prev => prev.map(podcast => 
         podcast.weekStart === weekStart 
-          ? { ...podcast, audioUrl: audioData.audioUrl, isGenerating: false }
+          ? { 
+              ...podcast, 
+              audioUrl: audioResponse.data.audioUrl, 
+              isGenerating: false 
+            } 
           : podcast
       ));
 
@@ -193,15 +204,15 @@ const WeeklyCallsInsights = () => {
 
     } catch (error) {
       console.error('Error generating podcast:', error);
+      setWeeklyPodcasts(prev => prev.map(podcast => 
+        podcast.weekStart === weekStart ? { ...podcast, isGenerating: false } : podcast
+      ));
+      
       toast({
         title: "Error",
         description: "Failed to generate podcast summary. Please try again.",
         variant: "destructive",
       });
-
-      setWeeklyPodcasts(prev => prev.map(podcast => 
-        podcast.weekStart === weekStart ? { ...podcast, isGenerating: false } : podcast
-      ));
     }
   };
 
