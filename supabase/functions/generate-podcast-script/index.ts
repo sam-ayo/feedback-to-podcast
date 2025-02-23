@@ -14,50 +14,52 @@ serve(async (req) => {
   }
 
   try {
-    const { calls } = await req.json()
-    console.log('Processing calls:', JSON.stringify(calls))
+    const { feedback } = await req.json()
 
-    if (!calls || !Array.isArray(calls) || calls.length === 0) {
-      throw new Error('Valid calls data is required')
+    if (!feedback) {
+      throw new Error('Feedback is required')
     }
 
     const openai = new OpenAI({
       apiKey: Deno.env.get('OPENAI_API_KEY')
     })
 
-    // Create a simple summary for OpenAI
-    const summary = calls.map(call => 
-      `Meeting: ${call.title}
-      Platform: ${call.platform}
-      Duration: ${call.duration}
-      Key Points:
-      ${call.insights.map(insight => `- ${insight}`).join('\n')}`
-    ).join('\n\n')
-
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
-          content: "You are a meeting summarizer. Create a concise podcast-style summary of these meetings."
+          content: `You are a podcast script writer. Create a discussion between these two hosts:
+
+1. Alex:
+- Role: Primary Host
+- Personality: Professional, analytical, and engaging
+- Speaking Style: Warm, authoritative, good at summarizing points
+- Voice Type: Male, confident and clear
+
+2. Sarah:
+- Role: Co-Host
+- Personality: Friendly, empathetic, and insightful
+- Speaking Style: Conversational, engaging, asks good follow-up questions
+- Voice Type: Female, natural and articulate
+
+Format the output as a conversation where each line starts with the speaker's name followed by a colon. Make the dialogue natural and engaging, with both hosts contributing equally to the discussion.`
         },
         {
           role: "user",
-          content: summary
+          content: `Create a podcast script discussing this meeting feedback: ${feedback}`
         }
-      ]
+      ],
     })
 
     const script = response.choices[0].message.content
-    console.log('Generated script:', script)
 
     return new Response(
       JSON.stringify({ script }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
-
   } catch (error) {
-    console.error('Error in generate-podcast-script:', error)
+    console.error('Error in generate-podcast-script function:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
