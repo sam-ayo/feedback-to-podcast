@@ -7,7 +7,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Feedback from "./pages/Feedback";
 import NotFound from "./pages/NotFound";
-import CallsInsights from "./pages/CallsInsights";
+import WeeklyCallsInsights from "./pages/WeeklyCallsInsights";
+import IndividualCallsInsights from "./pages/IndividualCallsInsights";
 
 const queryClient = new QueryClient();
 
@@ -19,7 +20,8 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/calls" element={<CallsInsights />} />
+          <Route path="/calls" element={<WeeklyCallsInsights />} />
+          <Route path="/calls/individual" element={<IndividualCallsInsights />} />
           <Route path="/feedback" element={<Feedback />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
