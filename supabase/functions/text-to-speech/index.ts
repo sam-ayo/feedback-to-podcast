@@ -32,32 +32,35 @@ serve(async (req) => {
 
     console.log('Processing text of length:', text.length)
 
-    // OpenAI API for text-to-speech
-    const response = await fetch('https://api.openai.com/v1/audio/speech', {
+    // ElevenLabs API for text-to-speech
+    const response = await fetch('https://api.elevenlabs.io/v1/text-to-speech/CwhRBWXzGAHq8TQ4Fs17', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'Accept': 'audio/mpeg',
         'Content-Type': 'application/json',
+        'xi-api-key': Deno.env.get('ELEVENLABS_API_KEY') || '',
       },
       body: JSON.stringify({
-        model: 'tts-1',
-        input: text.slice(0, 4000), // Limit text length
-        voice: 'echo',
-        response_format: 'mp3',
+        text: text,
+        model_id: "eleven_multilingual_v2",
+        voice_settings: {
+          stability: 0.5,
+          similarity_boost: 0.75,
+        }
       }),
     })
 
     if (!response.ok) {
       const error = await response.json()
-      throw new Error(error.error?.message || 'Failed to generate speech')
+      throw new Error(error.detail?.message || 'Failed to generate speech')
     }
 
     // Convert audio to base64 using our optimized function
     const arrayBuffer = await response.arrayBuffer()
     const base64Audio = arrayBufferToBase64(arrayBuffer)
-    const audioUrl = `data:audio/mp3;base64,${base64Audio}`
+    const audioUrl = `data:audio/mpeg;base64,${base64Audio}`
 
-    console.log('Successfully generated audio')
+    console.log('Successfully generated audio with ElevenLabs')
 
     return new Response(
       JSON.stringify({ audioUrl }),
