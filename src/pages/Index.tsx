@@ -1,4 +1,3 @@
-
 import React from "react";
 import FeedbackInput from "@/components/FeedbackInput";
 import PodcastPreview from "@/components/PodcastPreview";
@@ -63,7 +62,7 @@ const Index = () => {
       <div className="container max-w-4xl py-12 px-4">
         <div className="text-center mb-12 space-y-4">
           <h1 className="text-4xl font-bold text-gray-900">
-            Meeting Assistant
+            Podcast Generator
           </h1>
           <p className="text-gray-600">
             Transform your meeting feedback into an AI-powered podcast
@@ -80,9 +79,7 @@ const Index = () => {
             </div>
           )}
 
-          {audioUrl && !isProcessing && (
-            <PodcastPreview audioUrl={audioUrl} />
-          )}
+          {audioUrl && !isProcessing && <PodcastPreview audioUrl={audioUrl} />}
         </div>
       </div>
     </div>
