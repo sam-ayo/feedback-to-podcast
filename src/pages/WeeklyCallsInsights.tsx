@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -199,6 +200,8 @@ const WeeklyCallsInsights = () => {
         throw new Error("Failed to generate audio");
       }
 
+      console.log("Received audio URL:", audioResponse.data.audioUrl);
+
       // Update the podcast with the generated audio URL
       setWeeklyPodcasts((prev) =>
         prev.map((podcast) =>
@@ -235,7 +238,13 @@ const WeeklyCallsInsights = () => {
   };
 
   const formatWeekRange = (start: string, end: string) => {
-    return `${new Date(start).toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${new Date(end).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+    return `${new Date(start).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    })} - ${new Date(end).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    })}`;
   };
 
   if (isLoading) {
