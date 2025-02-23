@@ -2,11 +2,12 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import ZoomIcon from "@/components/icons/ZoomIcon";
 
 const MEETING_PLATFORMS = [
   {
     name: "Zoom",
-    icon: "/lovable-uploads/d725522d-d449-4284-ad8c-34b718fcec60.png#zoom",
+    icon: ZoomIcon,
     action: () => console.log("Connecting to Zoom..."),
   },
   {
@@ -42,11 +43,15 @@ const MeetingConnections = () => {
           >
             <div className="flex flex-col items-center space-y-4">
               <div className="w-16 h-16 rounded-2xl bg-white shadow-sm p-2 flex items-center justify-center">
-                <img
-                  src={platform.icon}
-                  alt={platform.name}
-                  className="w-10 h-10 object-contain"
-                />
+                {typeof platform.icon === 'string' ? (
+                  <img
+                    src={platform.icon}
+                    alt={platform.name}
+                    className="w-10 h-10 object-contain"
+                  />
+                ) : (
+                  <platform.icon className="w-10 h-10" />
+                )}
               </div>
               <span className="text-sm font-medium text-gray-700">
                 {platform.name}
