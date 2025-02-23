@@ -37,7 +37,6 @@ const MeetingConnections = () => {
   const handleConnect = (platform: typeof MEETING_PLATFORMS[0]) => {
     toast({
       title: platform.action(),
-      description: "Simulating connection...",
     });
 
     // Simulate connection delay
