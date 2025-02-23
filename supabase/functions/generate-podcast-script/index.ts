@@ -2,21 +2,25 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
 import OpenAI from "https://esm.sh/openai@4.20.1"
+import { zodResponseFormat } from "openai/helpers/zod";
+import { z } from "https://deno.land/x/zod/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Define the structure for our dialogue segments
-interface DialogueSegment {
-  host_id: "pNInz6obpgDQGcFmaJgB" | "EXAVITQu4vr4xnSDxMaL"
-  text: string
-}
 
-interface DialogueScript {
-  segments: DialogueSegment[]
-}
+
+const PodcastScriptLine = z.object({
+  host_id: z.number(),
+  text: z.string()
+})
+
+const PodcastScript = z.object({
+  script: z.array(PodcastScriptLine)
+})
+
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -34,54 +38,26 @@ serve(async (req) => {
       apiKey: Deno.env.get('OPENAI_API_KEY')
     })
 
-    const response = await openai.chat.completions.create({
+    const response = await openai.beta.chat.completions.parse({
       model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
           content: `You are a podcast script writer. Create a discussion between two hosts about the given meeting feedback. 
-          Structure the output as an array of dialogue segments, where each segment contains:
-          - host_id: "pNInz6obpgDQGcFmaJgB" for Alex (male host) or "EXAVITQu4vr4xnSDxMaL" for Sarah (female host)
-          - text: The spoken dialogue for that segment
-
-          Make the dialogue natural and engaging, with both hosts contributing equally to the discussion.
-          Format your response as valid JSON matching this structure:
-          {
-            "segments": [
-              {
-                "host_id": "pNInz6obpgDQGcFmaJgB",
-                "text": "Hello and welcome..."
-              },
-              {
-                "host_id": "EXAVITQu4vr4xnSDxMaL",
-                "text": "Thanks Alex..."
-              }
-            ]
-          }`
+          Make the dialogue natural and engaging, with both hosts contributing equally to the discussion.`
         },
         {
           role: "user",
           content: `Create a podcast script discussing this meeting feedback: ${feedback}`
         }
       ],
-      response_format: { type: "json_object" }
+      response_format: zodResponseFormat(PodcastScript, "podcast")
     })
 
-    const structuredScript = JSON.parse(response.choices[0].message.content) as DialogueScript
-
-    // Return both the structured script and a formatted version for display
-    const formattedScript = structuredScript.segments
-      .map(segment => {
-        const hostName = segment.host_id === "pNInz6obpgDQGcFmaJgB" ? "Alex" : "Sarah"
-        return `${hostName}: ${segment.text}`
-      })
-      .join('\n')
+    const structuredScript = response.choices[0].message.parsed;
 
     return new Response(
-      JSON.stringify({ 
-        script: formattedScript,
-        structuredScript: structuredScript
-      }),
+      JSON.stringify({ structuredScript }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {

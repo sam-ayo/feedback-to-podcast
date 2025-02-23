@@ -1,9 +1,8 @@
-
-import React, { useEffect, useRef } from 'react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Download, PlayCircle, PauseCircle } from 'lucide-react';
-import AudioWaveform from './AudioWaveform';
+import React, { useEffect, useRef } from "react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Download, PlayCircle, PauseCircle } from "lucide-react";
+import AudioWaveform from "./AudioWaveform";
 
 interface PodcastPreviewProps {
   audioUrl: string;
@@ -15,11 +14,13 @@ const PodcastPreview: React.FC<PodcastPreviewProps> = ({ audioUrl }) => {
 
   useEffect(() => {
     audioRef.current = new Audio(audioUrl);
-    audioRef.current.addEventListener('ended', () => setIsPlaying(false));
+    audioRef.current.addEventListener("ended", () => setIsPlaying(false));
 
     return () => {
       if (audioRef.current) {
-        audioRef.current.removeEventListener('ended', () => setIsPlaying(false));
+        audioRef.current.removeEventListener("ended", () =>
+          setIsPlaying(false)
+        );
         audioRef.current.pause();
       }
     };
@@ -37,7 +38,7 @@ const PodcastPreview: React.FC<PodcastPreviewProps> = ({ audioUrl }) => {
   };
 
   const handleDownload = () => {
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = audioUrl;
     a.download = `podcast-${new Date().toISOString()}.mp3`;
     document.body.appendChild(a);
@@ -49,7 +50,9 @@ const PodcastPreview: React.FC<PodcastPreviewProps> = ({ audioUrl }) => {
     <Card className="p-6 backdrop-blur-sm bg-white/50 animate-slideUp">
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold text-gray-800">Podcast Preview</h3>
+          <h3 className="text-lg font-semibold text-gray-800">
+            Podcast Preview
+          </h3>
           <Button variant="outline" size="icon" onClick={handleDownload}>
             <Download className="w-4 h-4" />
           </Button>
