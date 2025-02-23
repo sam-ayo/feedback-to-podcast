@@ -19,21 +19,6 @@ const MEETING_PLATFORMS = [
     icon: "/lovable-uploads/d725522d-d449-4284-ad8c-34b718fcec60.png#meet",
     action: () => console.log("Connecting to Google Meet..."),
   },
-  {
-    name: "Notion AI",
-    icon: "/lovable-uploads/d725522d-d449-4284-ad8c-34b718fcec60.png#notion",
-    action: () => console.log("Connecting to Notion AI..."),
-  },
-  {
-    name: "Loom",
-    icon: "/lovable-uploads/d725522d-d449-4284-ad8c-34b718fcec60.png#loom",
-    action: () => console.log("Connecting to Loom..."),
-  },
-  {
-    name: "FacetTime",
-    icon: "/lovable-uploads/d725522d-d449-4284-ad8c-34b718fcec60.png#facetime",
-    action: () => console.log("Connecting to FacetTime..."),
-  },
 ];
 
 const MeetingConnections = () => {
