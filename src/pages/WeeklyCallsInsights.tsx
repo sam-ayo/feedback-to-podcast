@@ -86,7 +86,8 @@ const MOCK_CALLS = [
 ];
 
 const WeeklyCallsInsights = () => {
-  const { weeklyPodcasts, isLoading, generatePodcast } = useWeeklyPodcasts(MOCK_CALLS);
+  const { weeklyPodcasts, isLoading, generatePodcast } =
+    useWeeklyPodcasts(MOCK_CALLS);
 
   if (isLoading) {
     return (
@@ -107,10 +108,15 @@ const WeeklyCallsInsights = () => {
               <p>30-minute AI-generated summaries of your weekly calls</p>
             </div>
             <div className="grid gap-6">
-              {weeklyPodcasts.map((podcast) => (
+              {weeklyPodcasts.map((podcast, index) => (
                 <WeeklyPodcastCard
                   key={podcast.id}
                   {...podcast}
+                  audioUrl={
+                    index === 0
+                      ? "https://oevsjdzovtkuriioibci.supabase.co/storage/v1/object/public/podcast_audio//podcast_1740345835300.mp3"
+                      : undefined
+                  }
                   onGenerate={generatePodcast}
                 />
               ))}
