@@ -47,7 +47,7 @@ export const WeeklyPodcastCard: React.FC<WeeklyPodcastCardProps> = ({
               onClick={() => onGenerate(weekStart, weekEnd)}
               size="sm"
             >
-              Generate Summary
+              Generate Podcast
             </Button>
           )}
         </div>
