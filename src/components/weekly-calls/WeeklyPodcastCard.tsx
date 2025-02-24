@@ -3,7 +3,7 @@ import React from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import PodcastPreview from "@/components/PodcastPreview";
-import { Rss, Apple, Spotify } from "lucide-react";
+import { Rss, Apple } from "lucide-react";
 
 interface WeeklyPodcastCardProps {
   id: number;
@@ -62,9 +62,6 @@ export const WeeklyPodcastCard: React.FC<WeeklyPodcastCardProps> = ({
           <>
             <PodcastPreview audioUrl={audioUrl} />
             <div className="flex gap-3 mt-4">
-              <Button variant="ghost" size="icon" className="text-gray-600 hover:text-gray-900">
-                <Spotify className="h-5 w-5" />
-              </Button>
               <Button variant="ghost" size="icon" className="text-gray-600 hover:text-gray-900">
                 <Apple className="h-5 w-5" />
               </Button>
